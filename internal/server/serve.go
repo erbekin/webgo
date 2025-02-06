@@ -3,12 +3,16 @@ package server
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 )
 
-func Serve(port string) error {
+// Serve starts server. Server will listen on addr
+func Serve(addr string) error {
 
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+	mux := http.NewServeMux()
+
+	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodGet {
 			w.Header().Set("Content-Type", "text/html; charset=utf-8")
 			if _, err := fmt.Fprint(w, "<h1> Welcome </h1>"); err != nil {
@@ -26,7 +30,14 @@ func Serve(port string) error {
 		}
 
 	})
-	return http.ListenAndServe(port, nil)
+
+	// Use middleware
+	loggedMux := loggingMiddleware(mux)
+
+	// Start
+	log.Println("[Listening]" + addr)
+
+	return http.ListenAndServe(addr, loggedMux)
 }
 
 type response struct {
