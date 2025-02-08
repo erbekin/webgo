@@ -4,6 +4,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"github.com/julienschmidt/httprouter"
 	"io"
 	"log"
 	"net/http"
@@ -12,16 +13,18 @@ import (
 // Serve starts server. Server will listen on addr
 func Serve(addr string) error {
 
-	mux := http.NewServeMux()
-
-	mux.HandleFunc("GET /", func(w http.ResponseWriter, r *http.Request) {
+	router := httprouter.New()
+	// GET /
+	router.HandlerFunc(http.MethodGet, "/", func(w http.ResponseWriter, r *http.Request) {
 
 		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 		if _, err := fmt.Fprint(w, "Hello, World!"); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}
 	})
-	mux.HandleFunc("GET /echo", func(w http.ResponseWriter, r *http.Request) {
+
+	// GET /echo
+	router.HandlerFunc(http.MethodGet, "/echo", func(w http.ResponseWriter, r *http.Request) {
 		body, _ := io.ReadAll(r.Body)
 		encoded := base64.StdEncoding.EncodeToString(body)
 		cookiesJson, _ := json.Marshal(r.Cookies())
@@ -39,7 +42,8 @@ func Serve(addr string) error {
 		}
 	})
 
-	mux.HandleFunc("GET /auth", func(w http.ResponseWriter, r *http.Request) {
+	// GET /auth
+	router.HandlerFunc(http.MethodGet, "/auth", func(w http.ResponseWriter, r *http.Request) {
 		ref := r.URL.Query().Get("ref")
 		if ref == "" {
 			http.Redirect(w, r, "/", http.StatusSeeOther)
@@ -48,7 +52,8 @@ func Serve(addr string) error {
 		http.Redirect(w, r, ref, http.StatusFound)
 	})
 
-	mux.HandleFunc("GET /secret", func(w http.ResponseWriter, r *http.Request) {
+	// GET /secret
+	router.HandlerFunc(http.MethodGet, "/secret", func(w http.ResponseWriter, r *http.Request) {
 		isAuthorized := authUser(r)
 
 		if !isAuthorized {
@@ -73,8 +78,12 @@ func Serve(addr string) error {
 		return
 
 	})
+
+	// Static
+	router.ServeFiles("/static/*filepath", http.Dir("static/"))
+
 	// Use middleware
-	loggedMux := loggingMiddleware(mux)
+	loggedMux := loggingMiddleware(router)
 	authMux := basicAuthMiddleware(loggedMux)
 
 	// Start
