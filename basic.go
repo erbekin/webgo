@@ -3,7 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
-	"github.com/Emre-Erbekin/webgo/internal/server"
+	"github.com/erbekin/webgo/internal/server"
 	"log"
 	"os"
 	"regexp"
