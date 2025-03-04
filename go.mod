@@ -1,4 +1,4 @@
-module github.com/Emre-Erbekin/webgo
+module github.com/erbekin/webgo
 
 go 1.23
 
